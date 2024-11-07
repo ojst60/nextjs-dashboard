@@ -151,7 +151,7 @@ export async function authenticate(
 }
 
 export async function register(
-  prevState: ICreateUser | undefined,
+  prevState: ICreateUser,
   formData: FormData
 ) {
   try {
@@ -170,6 +170,6 @@ export async function register(
     }>`INSERT INTO USERS (name, email, password) VALUES(${name}, ${email.toLowerCase()}, ${hashPassword})`;
     return user.rows[0];
   } catch (error) {
-    return null;
+    throw error;
   }
 }

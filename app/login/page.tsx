@@ -17,7 +17,7 @@ export default function LoginPage() {
           </div>
         </div>
         <LoginForm />
-        <p className="px-6">Don't have an account ? <Link className="text-blue-500" href="/sign-up">Register</Link></p>
+        <p className="px-6">{`Don't have an account`} ? <Link className="text-blue-500" href="/sign-up">Register</Link></p>
       </div>
     </main>
   );
