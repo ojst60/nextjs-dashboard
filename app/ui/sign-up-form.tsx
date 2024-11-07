@@ -12,10 +12,7 @@ import { useActionState } from "react";
 import { register } from "@/app/lib/action";
 
 export default function SignupForm() {
-  const [errorMessage, formAction, isPending] = useActionState(
-    register,
-    undefined
-  );
+  const [state, formAction, isPending] = useActionState(register, undefined);
 
   return (
     <form action={formAction} className="space-y-3">
@@ -24,7 +21,7 @@ export default function SignupForm() {
           Please create a new user.
         </h1>
         <div className="w-full">
-        <div className="mt-4">
+          <div className="mt-4">
             <label
               className="mb-3 mt-5 block text-xs font-medium text-gray-900"
               htmlFor="name"
@@ -37,24 +34,22 @@ export default function SignupForm() {
                 id="name"
                 type="text"
                 name="name"
+                defaultValue={state?.name}
                 placeholder="Enter name"
-                required
                 minLength={2}
               />
               <UserIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
             </div>
-            <div
-          className="flex h-8 items-end space-x-1"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {errorMessage?.name && (
-            <>
-              <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
-              <p className="text-sm text-red-500">{errorMessage.name}</p>
-            </>
-          )}
-        </div>
+            {state && "errors" in state && state.errors && (
+              <div
+                className="flex h-8 items-end space-x-1"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
+                <p className="text-sm text-red-500">{state?.errors.name}</p>
+              </div>
+            )}
           </div>
           <div>
             <label
@@ -70,22 +65,20 @@ export default function SignupForm() {
                 type="email"
                 name="email"
                 placeholder="Enter your email address"
-                required
+                defaultValue={state?.email}
               />
               <AtSymbolIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
             </div>
-            <div
-          className="flex h-8 items-end space-x-1"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {errorMessage?.email && (
-            <>
-              <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
-              <p className="text-sm text-red-500">{errorMessage.email}</p>
-            </>
-          )}
-        </div>
+            {state && "errors" in state && state?.errors?.email && (
+              <div
+                className="flex h-8 items-end space-x-1"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
+                <p className="text-sm text-red-500">{state?.errors.email}</p>
+              </div>
+            )}
           </div>
           <div className="mt-4">
             <label
@@ -101,29 +94,25 @@ export default function SignupForm() {
                 type="password"
                 name="password"
                 placeholder="Enter password"
-                required
-                minLength={6}
+                defaultValue={state?.password}
               />
               <KeyIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
             </div>
-            <div
-          className="flex h-8 items-end space-x-1"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {errorMessage?.password && (
-            <>
-              <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
-              <p className="text-sm text-red-500">{errorMessage.password}</p>
-            </>
-          )}
-        </div>
+            {state && "errors" in state && state?.errors?.password && (
+              <div
+                className="flex h-8 items-end space-x-1"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
+                <p className="text-sm text-red-500">{state?.errors.password}</p>
+              </div>
+            )}
           </div>
         </div>
         <Button className="mt-4 w-full" aria-disabled={isPending}>
           Register <ArrowRightIcon className="ml-auto h-5 w-5 text-gray-50" />
         </Button>
-    
       </div>
     </form>
   );

@@ -21,38 +21,38 @@ const FormSchema = z.object({
   date: z.string(),
 });
 
-const UserSignUpForm = z.object({
-  id: z.string(),
+const SignUpFormSchema = z.object({
   name: z
     .string()
     .trim()
     .min(2, { message: "Must be at least 2 characters long" }),
-  password: z
-    .string()
-    .min(6, { message: "Password must not greater than 6 characters" }),
+  password: z.string().min(6, { message: "Min character is 6" }),
   email: z.string().email({ message: "Enter a valid email" }).trim(),
 });
 
-export type SignUpState = {
-  errors?: {
-    name?: string[];
-    email?: string[];
-    password?: string[];
-  };
-  message?: string;
-};
+export type SignUpFormState =
+   { name: string; password: string; email: string }
+  | {
+      name: string;
+      password: string;
+      email: string;
+      errors?: {
+        name?: string[] | undefined;
+        email?: string[] | undefined;
+        password?: string[] | undefined;
+      };
+      message?: string;
+    }
+  | undefined;
+
 export type State = {
   errors?: {
     customerId?: string[];
     amount?: string[];
     status?: string[];
   };
-  message?: string | null;
+  prevState?: State;
 };
-
-const CreateUser = UserSignUpForm.omit({ id: true });
-
-export type ICreateUser = z.infer<typeof CreateUser>;
 
 const CreateInvoice = FormSchema.omit({ id: true, date: true });
 
@@ -68,7 +68,6 @@ export async function createInvoice(prevState: State, formData: FormData) {
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
-      message: "Missing Fields. Failed to Create Invoice.",
     };
   }
 
@@ -151,16 +150,28 @@ export async function authenticate(
 }
 
 export async function register(
-  prevState: ICreateUser,
+  prevState: SignUpFormState,
   formData: FormData
-) {
-  try {
-    const { name, email, password } = CreateUser.parse({
-      password: formData.get("password"),
-      email: formData.get("email"),
-      name: formData.get("name"),
-    });
+): Promise<SignUpFormState> {
+  console.log({ prevState });
+  const validatedFields = SignUpFormSchema.safeParse({
+    password: formData.get("password"),
+    email: formData.get("email"),
+    name: formData.get("name"),
+  });
 
+  if (!validatedFields.success) {
+    return {
+      name: formData.get("name") as string,
+      email: formData.get("email") as string,
+      password: formData.get("password") as string,
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+
+  const { name, password, email } = validatedFields.data;
+
+  try {
     const hashPassword = await bcrypt.hash(password, 10);
 
     const user = await sql<{
@@ -168,8 +179,12 @@ export async function register(
       password: string;
       email: string;
     }>`INSERT INTO USERS (name, email, password) VALUES(${name}, ${email.toLowerCase()}, ${hashPassword})`;
+
     return user.rows[0];
   } catch (error) {
-    throw error;
+    console.log(error)
+    return { message: "Failed to update",  name: formData.get("name") as string,
+      email: formData.get("email") as string,
+      password: formData.get("password") as string, };
   }
 }
