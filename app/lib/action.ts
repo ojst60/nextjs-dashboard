@@ -30,8 +30,10 @@ const SignUpFormSchema = z.object({
   email: z.string().email({ message: "Enter a valid email" }).trim(),
 });
 
+
+
 export type SignUpFormState =
-   { name: string; password: string; email: string }
+  | { name: string; password: string; email: string }
   | {
       name: string;
       password: string;
@@ -45,20 +47,42 @@ export type SignUpFormState =
     }
   | undefined;
 
-export type State = {
-  errors?: {
-    customerId?: string[];
-    amount?: string[];
-    status?: string[];
-  };
-  prevState?: State;
-};
+export type State =
+  | { customerId: string; amount: string; status: string }
+  | {
+      errors?: {
+        customerId?: string[];
+        amount?: string[];
+        status?: string[];
+      };
+      message?: string;
+    }
+  | undefined;
 
 const CreateInvoice = FormSchema.omit({ id: true, date: true });
 
 const UpdateInvoice = FormSchema.omit({ id: true, date: true });
 
-export async function createInvoice(prevState: State, formData: FormData) {
+export async function updateInvoice(id: string, formData: FormData) {
+  const { customerId, amount, status } = UpdateInvoice.parse({
+    customerId: formData.get('customerId'),
+    amount: formData.get('amount'),
+    status: formData.get('status'),
+  });
+ 
+  const amountInCents = amount * 100;
+ 
+  await sql`
+    UPDATE invoices
+    SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
+    WHERE id = ${id}
+  `;
+ 
+  revalidatePath('/dashboard/invoices');
+  redirect('/dashboard/invoices');
+}
+
+export async function createInvoice(state: State, formData: FormData) :Promise<State>{
   const validatedFields = CreateInvoice.safeParse({
     customerId: formData.get("customerId"),
     amount: formData.get("amount"),
@@ -82,36 +106,9 @@ export async function createInvoice(prevState: State, formData: FormData) {
     VALUES (${customerId}, ${amountInCents}, ${status}, ${date})
   `;
   } catch (error) {
-    // Could be handle properly
     console.log(error);
     return {
       message: "Database Error: Failed to Create Invoice.",
-    };
-  }
-
-  revalidatePath("/dashboard/invoices");
-  redirect("/dashboard/invoices");
-}
-
-export async function updateInvoice(id: string, formData: FormData) {
-  const { customerId, amount, status } = UpdateInvoice.parse({
-    customerId: formData.get("customerId"),
-    amount: formData.get("amount"),
-    status: formData.get("status"),
-  });
-
-  const amountInCents = amount * 100;
-
-  try {
-    await sql`
-    UPDATE invoices
-    SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
-    WHERE id = ${id}
-  `;
-  } catch (error) {
-    console.log(error);
-    return {
-      message: "Date Error: Failed to update Invoice",
     };
   }
 
@@ -149,11 +146,23 @@ export async function authenticate(
   }
 }
 
+function isDatabaseError(
+  error: unknown
+): error is { code: string; message: string } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof (error as Record<string, unknown>).code === "string" &&
+    "message" in error &&
+    typeof (error as Record<string, unknown>).message === "string"
+  );
+}
+
 export async function register(
   prevState: SignUpFormState,
   formData: FormData
 ): Promise<SignUpFormState> {
-  console.log({ prevState });
   const validatedFields = SignUpFormSchema.safeParse({
     password: formData.get("password"),
     email: formData.get("email"),
@@ -182,9 +191,20 @@ export async function register(
 
     return user.rows[0];
   } catch (error) {
-    console.log(error)
-    return { message: "Failed to update",  name: formData.get("name") as string,
+    const prevData = {
+      name: formData.get("name") as string,
       email: formData.get("email") as string,
-      password: formData.get("password") as string, };
+      password: formData.get("password") as string,
+    };
+
+    let message = "Failed to create user";
+
+    if (isDatabaseError(error)) {
+      if (error.code === "23505") {
+        message = "Duplicate value";
+      }
+    }
+
+    return { message, ...prevData };
   }
 }

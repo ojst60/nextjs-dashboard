@@ -17,6 +17,17 @@ export default function SignupForm() {
   return (
     <form action={formAction} className="space-y-3">
       <div className="flex-1 rounded-lg bg-gray-50 px-6 pb-4 pt-8">
+        {state && "message" in state && (
+          <div
+            className="flex h-8 items-end space-x-1"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
+            <p className="text-sm text-red-500">{state.message}</p>
+          </div>
+        )}
+
         <h1 className={`${lusitana.className} mb-3 text-2xl`}>
           Please create a new user.
         </h1>
@@ -40,7 +51,7 @@ export default function SignupForm() {
               />
               <UserIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
             </div>
-            {state && "errors" in state && state.errors && (
+            {state && "errors" in state && state.errors?.name && (
               <div
                 className="flex h-8 items-end space-x-1"
                 aria-live="polite"
